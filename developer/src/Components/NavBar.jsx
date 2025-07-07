@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { AlignJustify, LogOut } from 'lucide-react';
-import React, {useState } from 'react';
+import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {Link, useNavigate} from "react-router-dom" ;
 import { BASE_URL } from '../utils/Constant';
@@ -10,8 +10,6 @@ const Navbar = () => {
   const user = useSelector( (store) => store.user) ;
   const dispatch = useDispatch() ;
   const navigate = useNavigate() ;
-  const [isOpen, setIsOpen] = useState(false);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const handleLogout = async () => { 
       try{
           await axios.post(BASE_URL + "/logout" , {} ,{withCredentials : true,}) ;
@@ -23,13 +21,7 @@ const Navbar = () => {
       }
   } ;
 
-  const toggleMenu = () => {
-    setIsOpen(!isOpen);
-  };
 
-  const toggleDropdown = () => {
-    setIsDropdownOpen(!isDropdownOpen);
-  };
 
   return (
     <nav className="bg-white shadow-lg border-b border-gray-200">
@@ -64,32 +56,29 @@ const Navbar = () => {
               </Link>
               
               {/* Dropdown Menu */}
-              <div className="relative">
-                <button
-                  onClick={toggleDropdown}
-                  className="text-gray-700 hover:bg-gray-50 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center"
+              <div className="relative group">
+                <a
+                  className="text-gray-700 hover:bg-gray-50 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center cursor-pointer"
                 >
                   Features
-                </button>
+                </a>
                 
-                {isDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
-                    <div className="py-1">
-                      <Link
-                        to="/connections"
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-blue-600"
-                      >
-                        Connections
-                      </Link>
-                      <Link
-                        to="/requests"
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-blue-600"
-                      >
-                        ConnectionRequests
-                      </Link>
-                    </div>
+                <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+                  <div className="py-1">
+                    <Link
+                      to="/connections"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-blue-600"
+                    >
+                      Connections
+                    </Link>
+                    <Link
+                      to="/requests"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-blue-600"
+                    >
+                      ConnectionRequests
+                    </Link>
                   </div>
-                )}
+                </div>
               </div>
 
               <Link
@@ -116,7 +105,7 @@ const Navbar = () => {
           {/* Mobile menu button */}
           <div className="md:hidden">
             <button
-              onClick={toggleMenu}
+             
               className="inline-flex items-center justify-center p-2 rounded-md text-gray-700 hover:text-blue-600 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
             >
               <AlignJustify/>
@@ -126,7 +115,7 @@ const Navbar = () => {
       </div>
 
       {/* Mobile Menu */}
-      {isOpen && (
+      {(
         <div className="md:hidden">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-gray-50 border-t border-gray-200">
             <a
@@ -141,34 +130,31 @@ const Navbar = () => {
             >
               Profile
             </a>
-           {/* Dropdown Menu */}
-              <div className="relative">
-                <button
-                  onClick={toggleDropdown}
-                  className="text-gray-700 hover:bg-gray-50 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center"
+          {/* Dropdown Menu */}
+          <div className="relative group">
+            <a
+              className="text-gray-700 hover:bg-gray-50 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center cursor-pointer"
+            >
+              Features
+            </a>
+            
+            <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+              <div className="py-1">
+                <Link
+                  to="/connections"
+                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-blue-600"
                 >
-                  Features
-                </button>
-                
-                {isDropdownOpen && (
-                  <div className="absolute mt-2 w-full rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
-                    <div className="py-1">
-                      <Link
-                        to="/connections"
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-blue-600"
-                      >
-                        Friends 
-                      </Link>
-                      <Link
-                        to="/requests"
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-blue-600"
-                      >
-                        Friends Requests
-                      </Link>
-                    </div>
-                  </div>
-                )}
+                  Connections
+                </Link>
+                <Link
+                  to="/requests"
+                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-blue-600"
+                >
+                  ConnectionRequests
+                </Link>
               </div>
+            </div>
+          </div>
             <a
               href="/portfolio"
               className="text-gray-700 hover:bg-gray-100 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium"

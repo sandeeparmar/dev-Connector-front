@@ -7,26 +7,26 @@ import { addUser } from '../utils/userSlice.js';
 import { useNavigate } from 'react-router-dom';
 
 const EditProfile = ({user}) => {
-    const [emailID , setEmailID]  = useState("Bailley@gmail.com") ;
-    const [password , setPassword]  = useState("Bailley@123") ;
+    const [emailID , setEmailID]  = useState("") ;
+    const [password , setPassword]  = useState("") ;
     const [isEditForm , setEditForm] = useState(false) ;
    const navigate = useNavigate() ;
 
   const [formData, setFormData] = useState({
-    firstName: user?.firstName || 'Bailley',
-    lastName: user?.lastName || 'Bottle',
-    about: user?.about || 'i am  a Bottle',
-    photoUrl: user?.photoUrl || 'https://www.themessycorner.in/cdn/shop/products/G4_1000x.jpg?v=1680947370',
-    Address: user?.Address || 'raj guru marg',
-    Batch: user?.Batch || '2026',
-    Company: user?.Company || 'Refollium',
-    age: user?.age || '18',
-    phone: user?.phone || '9424572892',
+    firstName: user?.firstName || '',
+    lastName: user?.lastName || '',
+    about: user?.about || '',
+    photoUrl: user?.photoUrl || '',
+    Address: user?.Address || '',
+    Batch: user?.Batch || '',
+    Company: user?.Company || '',
+    age: user?.age || '',
     skills : user?.skills || [],
   });
   const [showGoodToast , setShowGoodToast] = useState(false) ;
   const [showBadToast , setShowBadToast] = useState(false) ;
   const dispatch = useDispatch() ;
+  const [messageShown , setMessageShown] = useState(false) ;
 
 
   const handleChange = (e) => {
@@ -37,6 +37,7 @@ const EditProfile = ({user}) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      if(!formData.checkValidity()) return ;
       const res =  await axios.patch(BASE_URL + "/profile/edit", formData , {
         withCredentials: true,
       });
@@ -55,7 +56,15 @@ const EditProfile = ({user}) => {
   };
 
   const handleSignup = async (e) => { 
-     e.preventDefault();
+    e.preventDefault();
+     if (!emailID || !password || !formData.firstName) {
+    setShowBadToast(true);
+    setMessageShown(false);
+    setTimeout(() => setShowBadToast(false), 3000);
+    return;
+  }
+
+    
     try {
       const res =  await axios.post(BASE_URL + "/signup", { ...formData , emailID , password } , {
         withCredentials: true,
@@ -64,14 +73,18 @@ const EditProfile = ({user}) => {
       dispatch(addUser(res?.data?.data)) ;
       setShowGoodToast(true) ;
       setTimeout(() =>  setShowGoodToast(false) 
-       , 3000) ;
+       , 2000) ;
        setEditForm(true) ;
        return navigate("/profile") ;
     } catch (err) {
-      console.error(err);
+      if(err.response.status === 401){
+        setMessageShown(true) ;
+      }
       setShowBadToast(true) ;
-       setTimeout(() => 
-        setShowBadToast(false)  , 3000) ;
+       setTimeout(() => {
+        setShowBadToast(false) ;
+        setMessageShown(false) ;
+       } , 2000) ;
     }
   } 
 
@@ -80,11 +93,11 @@ const EditProfile = ({user}) => {
 
   return ( 
     <>
-<div className="my-10 mx-10">
-  <div className="w-full p-6 mt-10 bg-base-300 rounded-lg shadow-md">
+<div className="mx-10">
+  <div className="w-full p-6  bg-base-300 rounded-lg shadow-md min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
     <h2 className="text-2xl font-bold mb-6 text-center">{isEditForm ? 'Edit Profile' : 'Signup'}</h2>
     
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 ">
       {/* First Column - Form Fields */}
       <div className="lg:col-span-4 space-y-4">
         <form onSubmit={ isEditForm ? handleSubmit : handleSignup}>
@@ -95,6 +108,7 @@ const EditProfile = ({user}) => {
               id="firstName"
               name="firstName"
               type="text"
+              autoComplete='firstName'
               value={formData.firstName}
               onChange={handleChange}
               className="w-full p-2 rounded border border-gray-300"
@@ -125,6 +139,7 @@ const EditProfile = ({user}) => {
               id="emailID"
               name="emailID"
               type="text"
+              autoComplete='email'
               value={emailID}
               onChange={(e) => setEmailID(e.target.value)}
               className="w-full p-2 rounded border border-gray-300"
@@ -136,7 +151,7 @@ const EditProfile = ({user}) => {
           <div>
             <label htmlFor="Password" className="block font-medium mb-1">Password</label>
             <input
-              type="text"
+              type="password"
               id="Password"
               name="Password"
               value={password}
@@ -157,6 +172,7 @@ const EditProfile = ({user}) => {
               value={formData.about}
               onChange={handleChange}
               rows={3}
+              autoComplete='about'
               className="w-full p-2 rounded border border-gray-300"
             />
           </div>
@@ -170,6 +186,7 @@ const EditProfile = ({user}) => {
               value={formData.Address}
               onChange={handleChange}
               rows={3}
+              autoComplete='Address'
               className="w-full p-2 rounded border border-gray-300"
             />
           </div>
@@ -202,6 +219,7 @@ const EditProfile = ({user}) => {
               name="Batch"
               value={formData.Batch}
               onChange={handleChange}
+              autoComplete='Batch'
               className="w-full p-2 rounded border border-gray-300"
             />
           </div>
@@ -215,6 +233,7 @@ const EditProfile = ({user}) => {
               name="Company"
               value={formData.Company}
               onChange={handleChange}
+              autoComplete='Company'
               className="w-full p-2 rounded border border-gray-300"
             />
           </div>
@@ -286,7 +305,7 @@ const EditProfile = ({user}) => {
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
       </svg>
-      <span>Something went wrong...</span>
+      <span>{messageShown ? "Email Already Registered.." : "Something went wrong..."}</span>
     </div>
   </div>
 )}

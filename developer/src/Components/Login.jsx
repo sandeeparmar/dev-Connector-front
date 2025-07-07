@@ -219,7 +219,7 @@ const Login = () => {
             </p>
           </div>
         </div>}
-        {!isLoginPage && <EditProfile/>}
+        {!isLoginPage && <EditProfile />}
     </>
   );
 };
