@@ -2,7 +2,7 @@ import { createSlice } from "@reduxjs/toolkit";
 import { Cone } from "lucide-react";
 
 const connectionSlice = createSlice({
-  name : 'connection' ,
+  name : 'connections' ,
   initialState : null ,
   reducers:{
      addConnections:(state , action) => action.payload ,
