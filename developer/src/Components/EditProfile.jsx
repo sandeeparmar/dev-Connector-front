@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import axios from 'axios';
 import { BASE_URL } from "../utils/Constant.js";
-import CardForEditComponents from './CardForEditComponets.jsx'; // Fixed typo
+import CardForEditComponents from './CardForEditComponets.jsx';
 import { useDispatch } from 'react-redux';
 import { addUser } from '../utils/userSlice.js';
 import { useNavigate } from 'react-router-dom';
@@ -22,25 +22,25 @@ const EditProfile = ({ user }) => {
     Batch: user?.Batch || '',
     Company: user?.Company || '',
     age: user?.age || '',
+    gender: user?.gender || '', // Added gender field
     skills: user?.skills || [],
   });
-  console.log(formData.firstName) ;
+  
   const [showGoodToast, setShowGoodToast] = useState(false);
   const [showBadToast, setShowBadToast] = useState(false);
-  const [messageShown, setMessageShown] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  // Toast management
   const showToast = useCallback((type, message, duration = 3000) => {
     if (type === 'success') {
       setShowGoodToast(true);
       setTimeout(() => setShowGoodToast(false), duration);
     } else {
       setShowBadToast(true);
-      setMessageShown(message === "Email Already Registered..");
+      setErrorMessage(message);
       setTimeout(() => {
         setShowBadToast(false);
-        setMessageShown(false);
+        setErrorMessage('');
       }, duration);
     }
   }, []);
@@ -82,17 +82,42 @@ const EditProfile = ({ user }) => {
     setIsLoading(true);
     
     try {
-      const res = await axios.patch(BASE_URL + "/profile/edit", formData, {
+      // Clean the form data
+      const cleanedFormData = {};
+      Object.keys(formData).forEach(key => {
+        const value = formData[key];
+        if (value !== '' && value !== null && value !== undefined) {
+          if (key === 'age' || key === 'Batch') {
+            cleanedFormData[key] = value ? parseInt(value, 10) : undefined;
+          } else {
+            cleanedFormData[key] = typeof value === 'string' ? value.trim() : value;
+          }
+        }
+      });
+
+      console.log('Sending update data:', cleanedFormData);
+      
+      const res = await axios.patch(BASE_URL + "/profile/edit", cleanedFormData, {
         withCredentials: true,
+        headers: {
+          'Content-Type': 'application/json',
+        }
       });
       
-      dispatch(addUser(res?.data?.data));
-      showToast('success', 'Profile updated successfully!');
+      console.log('Update response:', res.data);
       
-      setTimeout(() => navigate("/"), 2000);
+      if (res.data.success) {
+        dispatch(addUser(res.data.data));
+        showToast('success', res.data.message || 'Profile updated successfully!');
+        setTimeout(() => navigate("/"), 2000);
+      } else {
+        showToast('error', res.data.message || 'Failed to update profile');
+      }
+      
     } catch (err) {
-      console.error(err);
-      showToast('error', err.response?.data?.message || 'Failed to update profile');
+      console.error('Update error:', err);
+      const errorMsg = err.response?.data?.message || 'Failed to update profile';
+      showToast('error', errorMsg);
     } finally {
       setIsLoading(false);
     }
@@ -106,22 +131,64 @@ const EditProfile = ({ user }) => {
     setIsLoading(true);
     
     try {
-      const res = await axios.post(BASE_URL + "/signup", 
-        { ...formData, emailID, password }, 
-        { withCredentials: true }
-      );
+      // Clean the form data
+      const cleanedFormData = {};
+      Object.keys(formData).forEach(key => {
+        const value = formData[key];
+        if (value !== '' && value !== null && value !== undefined) {
+          if (key === 'age' || key === 'Batch') {
+            cleanedFormData[key] = value ? parseInt(value, 10) : undefined;
+          } else {
+            cleanedFormData[key] = typeof value === 'string' ? value.trim() : value;
+          }
+        }
+      });
+
+      const signupData = { 
+        ...cleanedFormData, 
+        emailID: emailID.trim(), 
+        password: password.trim() 
+      };
+
+      // Remove undefined values
+      Object.keys(signupData).forEach(key => {
+        if (signupData[key] === undefined) {
+          delete signupData[key];
+        }
+      });
+
+      console.log('Sending signup data:', signupData);
       
-      dispatch(addUser(res?.data?.data));
-      showToast('success', 'Account created successfully!');
-      
-      setTimeout(() => navigate("/profile"), 2000);
+      const res = await axios.post(BASE_URL + "/signup", signupData, { 
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      console.log('Signup response:', res.data);
+
+      if (res.data.success) {
+        dispatch(addUser(res.data.data));
+        showToast('success', res.data.message || 'Account created successfully!');
+        setTimeout(() => navigate("/profile"), 2000);
+      } else {
+        showToast('error', res.data.message || 'Failed to create account');
+      }
+
     } catch (err) {
-      console.error(err);
+      console.error('Signup error:', err);
+      console.error('Error response:', err.response?.data);
       
-      const errorMessage = err.response?.status === 401 || 
-                          err.response?.data?.message?.includes('email') 
-                          ? "Email Already Registered.." 
-                          : err.response?.data?.message || 'Failed to create account';
+      let errorMessage = 'Failed to create account';
+      
+      if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err.response?.status === 409) {
+        errorMessage = "Email Already Registered..";
+      } else if (err.response?.data?.errors) {
+        errorMessage = err.response.data.errors.join(', ');
+      }
       
       showToast('error', errorMessage);
     } finally {
@@ -217,6 +284,25 @@ const EditProfile = ({ user }) => {
                     </div>
                   </>
                 )}
+
+                {/* Gender */}
+                <div>
+                  <label htmlFor="gender" className="block font-medium mb-1 text-gray-700">
+                    Gender
+                  </label>
+                  <select
+                    id="gender"
+                    name="gender"
+                    value={formData.gender}
+                    onChange={handleChange}
+                    className="w-full p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Select Gender</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
 
                 {/* About */}
                 <div>
@@ -404,7 +490,7 @@ const EditProfile = ({ user }) => {
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
-            <span>{messageShown ? "Email already registered" : "Something went wrong. Please try again."}</span>
+            <span>{errorMessage || "Something went wrong. Please try again."}</span>
           </div>
         </div>
       )}

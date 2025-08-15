@@ -25,7 +25,7 @@ const Feed = () => {
     } catch (err) {
       console.error("Feed fetch error:", err);
       
-      // Only navigate to login for authentication errors
+    
       if (err.response?.status === 401 || err.response?.status === 403) {
         navigate("/login");
       } else {
