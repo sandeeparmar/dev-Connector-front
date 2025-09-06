@@ -178,8 +178,8 @@ const Login = () => {
                   </label>
                   <div className="relative group">
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                      <Mail className={`h-5 w-5 transition-colors duration-200 ${
-                        errors.emailID ? 'text-red-400' : 'text-gray-400 group-focus-within:text-blue-500'
+                      <Mail className={`h-5 w-5 transition-colors duration-500 ${
+                        errors.emailID ? 'text-red-400' : 'text-blue-700 group-focus-within:text-blue-800'
                       }`} />
                     </div>
                     <input
@@ -218,7 +218,7 @@ const Login = () => {
                   <div className="relative group">
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                       <Lock className={`h-5 w-5 transition-colors duration-200 ${
-                        errors.password ? 'text-red-400' : 'text-gray-400 group-focus-within:text-blue-500'
+                        errors.password ? 'text-red-400' : 'text-gray-800 group-focus-within:text-blue-500'
                       }`} />
                     </div>
                     <input

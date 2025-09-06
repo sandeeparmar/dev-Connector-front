@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import axios from 'axios';
 import { BASE_URL } from "../utils/Constant.js";
 import CardForEditComponents from './CardForEditComponets.jsx';
@@ -22,7 +22,7 @@ const EditProfile = ({ user }) => {
     Batch: user?.Batch || '',
     Company: user?.Company || '',
     age: user?.age || '',
-    gender: user?.gender || '', // Added gender field
+    gender: user?.gender || '',
     skills: user?.skills || [],
   });
   
@@ -31,12 +31,33 @@ const EditProfile = ({ user }) => {
   const [errorMessage, setErrorMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        phone: user?.phone || '',
+        firstName: user?.firstName || '',
+        lastName: user?.lastName || '',
+        about: user?.about || '',
+        photoUrl: user?.photoUrl || '',
+        Address: user?.Address || '',
+        Batch: user?.Batch || '',
+        Company: user?.Company || '',
+        age: user?.age || '',
+        gender: user?.gender || '',
+        skills: user?.skills || [],
+      });
+    }
+  }, [user]);
+
   const showToast = useCallback((type, message, duration = 3000) => {
     if (type === 'success') {
       setShowGoodToast(true);
+      setShowBadToast(false);
+      setErrorMessage('');
       setTimeout(() => setShowGoodToast(false), duration);
     } else {
       setShowBadToast(true);
+      setShowGoodToast(false);
       setErrorMessage(message);
       setTimeout(() => {
         setShowBadToast(false);
@@ -71,7 +92,57 @@ const EditProfile = ({ user }) => {
       return false;
     }
 
+    // // Validate phone number format if provided
+    // if (formData.phone && !/^[\+]?[1-9][\d]{0,15}$/.test(formData.phone.replace(/[\s\-\(\)]/g, ''))) {
+    //   showToast('error', 'Please enter a valid phone number');
+    //   return false;
+    // }
+
+    // Validate age range
+    if (formData.age && (parseInt(formData.age) < 16 || parseInt(formData.age) > 120)) {
+      showToast('error', 'Age must be between 16 and 120');
+      return false;
+    }
+
+    // Validate graduation year
+    const currentYear = new Date().getFullYear();
+    if (formData.Batch && (parseInt(formData.Batch) < 1950 || parseInt(formData.Batch) > currentYear + 10)) {
+      showToast('error', `Graduation year must be between 1950 and ${currentYear + 10}`);
+      return false;
+    }
+
+    // Validate photo URL format
+    if (formData.photoUrl && !/^https?:\/\/.+\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i.test(formData.photoUrl)) {
+      showToast('error', 'Please enter a valid image URL (jpg, jpeg, png, gif, webp)');
+      return false;
+    }
+
     return true;
+  };
+
+  const prepareFormData = () => {
+    const cleanedFormData = {};
+    Object.keys(formData).forEach(key => {
+      const value = formData[key];
+      if (value !== '' && value !== null && value !== undefined) {
+        if (key === 'age' || key === 'Batch') {
+          const numValue = parseInt(value, 10);
+          if (!isNaN(numValue)) {
+            cleanedFormData[key] = numValue;
+          }
+        } else if (Array.isArray(value)) {
+          if (value.length > 0) {
+            cleanedFormData[key] = value;
+          }
+        } else {
+          const trimmedValue = typeof value === 'string' ? value.trim() : value;
+          if (trimmedValue) {
+            cleanedFormData[key] = trimmedValue;
+          }
+        }
+      }
+    });
+    return cleanedFormData;
   };
 
   const handleSubmit = async (e) => {
@@ -82,22 +153,10 @@ const EditProfile = ({ user }) => {
     setIsLoading(true);
     
     try {
-      // Clean the form data
-      const cleanedFormData = {};
-      Object.keys(formData).forEach(key => {
-        const value = formData[key];
-        if (value !== '' && value !== null && value !== undefined) {
-          if (key === 'age' || key === 'Batch') {
-            cleanedFormData[key] = value ? parseInt(value, 10) : undefined;
-          } else {
-            cleanedFormData[key] = typeof value === 'string' ? value.trim() : value;
-          }
-        }
-      });
-
+      const cleanedFormData = prepareFormData();
       console.log('Sending update data:', cleanedFormData);
       
-      const res = await axios.patch(BASE_URL + "/profile/edit", cleanedFormData, {
+      const res = await axios.patch(`${BASE_URL}/profile/edit`, cleanedFormData, {
         withCredentials: true,
         headers: {
           'Content-Type': 'application/json',
@@ -109,14 +168,15 @@ const EditProfile = ({ user }) => {
       if (res.data.success) {
         dispatch(addUser(res.data.data));
         showToast('success', res.data.message || 'Profile updated successfully!');
-        setTimeout(() => navigate("/"), 2000);
+        setTimeout(() => navigate("/profile"), 2000);
       } else {
         showToast('error', res.data.message || 'Failed to update profile');
       }
-      
     } catch (err) {
       console.error('Update error:', err);
-      const errorMsg = err.response?.data?.message || 'Failed to update profile';
+      const errorMsg = err.response?.data?.message || 
+                      err.response?.data?.error ||
+                      'Failed to update profile. Please try again.';
       showToast('error', errorMsg);
     } finally {
       setIsLoading(false);
@@ -131,35 +191,16 @@ const EditProfile = ({ user }) => {
     setIsLoading(true);
     
     try {
-      // Clean the form data
-      const cleanedFormData = {};
-      Object.keys(formData).forEach(key => {
-        const value = formData[key];
-        if (value !== '' && value !== null && value !== undefined) {
-          if (key === 'age' || key === 'Batch') {
-            cleanedFormData[key] = value ? parseInt(value, 10) : undefined;
-          } else {
-            cleanedFormData[key] = typeof value === 'string' ? value.trim() : value;
-          }
-        }
-      });
-
+      const cleanedFormData = prepareFormData();
       const signupData = { 
         ...cleanedFormData, 
         emailID: emailID.trim(), 
         password: password.trim() 
       };
 
-      // Remove undefined values
-      Object.keys(signupData).forEach(key => {
-        if (signupData[key] === undefined) {
-          delete signupData[key];
-        }
-      });
-
       console.log('Sending signup data:', signupData);
       
-      const res = await axios.post(BASE_URL + "/signup", signupData, { 
+      const res = await axios.post(`${BASE_URL}/signup`, signupData, { 
         withCredentials: true,
         headers: {
           'Content-Type': 'application/json',
@@ -185,9 +226,15 @@ const EditProfile = ({ user }) => {
       if (err.response?.data?.message) {
         errorMessage = err.response.data.message;
       } else if (err.response?.status === 409) {
-        errorMessage = "Email Already Registered..";
+        errorMessage = "Email already registered. Please use a different email or try logging in.";
       } else if (err.response?.data?.errors) {
-        errorMessage = err.response.data.errors.join(', ');
+        errorMessage = Array.isArray(err.response.data.errors) 
+          ? err.response.data.errors.join(', ')
+          : err.response.data.errors;
+      } else if (err.response?.status === 400) {
+        errorMessage = "Invalid data provided. Please check your input and try again.";
+      } else if (err.response?.status >= 500) {
+        errorMessage = "Server error. Please try again later.";
       }
       
       showToast('error', errorMessage);
@@ -206,7 +253,7 @@ const EditProfile = ({ user }) => {
             {user ? 'Edit Profile' : 'Create Account'}
           </h2>
           
-          <form onSubmit={handleFormSubmit}>
+          <form onSubmit={handleFormSubmit} noValidate>
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
               {/* First Column - Primary Form Fields */}
               <div className="lg:col-span-4 space-y-4">
@@ -223,8 +270,9 @@ const EditProfile = ({ user }) => {
                     autoComplete="given-name"
                     value={formData.firstName}
                     onChange={handleChange}
-                    className="w-full p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                     required
+                    maxLength="50"
                   />
                 </div>
 
@@ -241,7 +289,8 @@ const EditProfile = ({ user }) => {
                     value={formData.lastName}
                     onChange={handleChange}
                     autoComplete="family-name"
-                    className="w-full p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    maxLength="50"
                   />
                 </div>
 
@@ -260,8 +309,9 @@ const EditProfile = ({ user }) => {
                         autoComplete="email"
                         value={emailID}
                         onChange={(e) => setEmailID(e.target.value)}
-                        className="w-full p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                         required
+                        maxLength="100"
                       />
                     </div>
 
@@ -277,10 +327,12 @@ const EditProfile = ({ user }) => {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         autoComplete="new-password"
-                        className="w-full p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                         minLength="6"
+                        maxLength="100"
                         required
                       />
+                      <p className="text-sm text-gray-600 mt-1">Minimum 6 characters</p>
                     </div>
                   </>
                 )}
@@ -295,7 +347,7 @@ const EditProfile = ({ user }) => {
                     name="gender"
                     value={formData.gender}
                     onChange={handleChange}
-                    className="w-full p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                   >
                     <option value="">Select Gender</option>
                     <option value="male">Male</option>
@@ -316,8 +368,10 @@ const EditProfile = ({ user }) => {
                     value={formData.about}
                     onChange={handleChange}
                     rows={3}
-                    className="w-full p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical"
+                    maxLength="500"
+                    className="w-full p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical transition-colors"
                   />
+                  <p className="text-sm text-gray-600 mt-1">{formData.about.length}/500 characters</p>
                 </div>
 
                 {/* Address */}
@@ -333,7 +387,8 @@ const EditProfile = ({ user }) => {
                     onChange={handleChange}
                     rows={2}
                     autoComplete="street-address"
-                    className="w-full p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical"
+                    maxLength="200"
+                    className="w-full p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical transition-colors"
                   />
                 </div>
 
@@ -349,8 +404,10 @@ const EditProfile = ({ user }) => {
                     placeholder="https://example.com/photo.jpg"
                     value={formData.photoUrl}
                     onChange={handleChange}
-                    className="w-full p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    maxLength="500"
                   />
+                  <p className="text-sm text-gray-600 mt-1">Supported formats: JPG, PNG, GIF, WebP</p>
                 </div>
               </div>
 
@@ -369,8 +426,8 @@ const EditProfile = ({ user }) => {
                     value={formData.Batch}
                     onChange={handleChange}
                     min="1950"
-                    max="2050"
-                    className="w-full p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    max={new Date().getFullYear() + 10}
+                    className="w-full p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                   />
                 </div>
 
@@ -387,7 +444,8 @@ const EditProfile = ({ user }) => {
                     autoComplete="organization"
                     value={formData.Company}
                     onChange={handleChange}
-                    className="w-full p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    maxLength="100"
+                    className="w-full p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                   />
                 </div>
 
@@ -405,7 +463,7 @@ const EditProfile = ({ user }) => {
                     onChange={handleChange}
                     min="16"
                     max="120"
-                    className="w-full p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                   />
                 </div>
 
@@ -419,10 +477,11 @@ const EditProfile = ({ user }) => {
                     id="phone"
                     name="phone"
                     autoComplete="tel"
-                    placeholder="(555) 123-4567"
+                    placeholder="+1 (555) 123-4567"
                     value={formData.phone}
                     onChange={handleChange}
-                    className="w-full p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    maxLength="20"
+                    className="w-full p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                   />
                 </div>
 
@@ -451,7 +510,7 @@ const EditProfile = ({ user }) => {
                     <button
                       type="button"
                       onClick={() => navigate('/login')}
-                      className="text-blue-600 hover:text-blue-800 font-medium"
+                      className="text-blue-600 hover:text-blue-800 font-medium underline"
                     >
                       Sign in here
                     </button>

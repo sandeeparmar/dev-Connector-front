@@ -8,7 +8,6 @@ import { removeUser } from '../utils/userSlice';
 
 const Navbar = () => {
   const user = useSelector((store) => store.user) ;
-  console.log(user) ;
   const dispatch = useDispatch() ;
   const navigate = useNavigate() ;
   const [isOpen , setIsOpen] = useState(false) ;
@@ -78,6 +77,12 @@ const Navbar = () => {
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-blue-600"
                     >
                       ConnectionRequests
+                    </Link>
+                     <Link
+                      to="/premium"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-blue-600"
+                    >
+                      Premium
                     </Link>
                   </div>
                 </div>
